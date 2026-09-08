@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Inbox, Table2 } from "lucide-react";
+import { Inbox, Table2, Handshake } from "lucide-react";
 
 const TABS = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/leads", label: "Leads", icon: Table2 },
+  { href: "/offers", label: "Offers", icon: Handshake },
 ];
 
 export function TopNav() {

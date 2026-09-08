@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { Channel, Stage } from "@/generated/prisma/enums";
+import type { Channel, OfferStatus, Stage } from "@/generated/prisma/enums";
 import { parseLeadCsv } from "@/lib/leadCsv";
 
 export async function sendMessage(formData: FormData) {
@@ -65,6 +65,55 @@ export async function createLead(formData: FormData) {
 
   revalidatePath("/inbox");
   redirect(`/inbox/${lead.id}`);
+}
+
+export async function createOffer(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const leadIds = formData.getAll("leadIds").map(String).filter(Boolean);
+
+  const offer = await prisma.offer.create({
+    data: {
+      name,
+      description,
+      leads: { create: leadIds.map((leadId) => ({ leadId })) },
+    },
+  });
+
+  revalidatePath("/offers");
+  redirect(`/offers/${offer.id}`);
+}
+
+export async function updateOfferStatus(offerId: string, status: OfferStatus) {
+  if (!offerId) return;
+  await prisma.offer.update({ where: { id: offerId }, data: { status } });
+  revalidatePath("/offers");
+  revalidatePath(`/offers/${offerId}`);
+}
+
+export async function addLeadToOffer(formData: FormData) {
+  const offerId = String(formData.get("offerId") ?? "");
+  const leadId = String(formData.get("leadId") ?? "");
+  if (!offerId || !leadId) return;
+
+  await prisma.offersOnLeads.upsert({
+    where: { offerId_leadId: { offerId, leadId } },
+    create: { offerId, leadId },
+    update: {},
+  });
+  await prisma.offer.update({ where: { id: offerId }, data: { updatedAt: new Date() } });
+
+  revalidatePath("/offers");
+  revalidatePath(`/offers/${offerId}`);
+}
+
+export async function removeLeadFromOffer(offerId: string, leadId: string) {
+  if (!offerId || !leadId) return;
+  await prisma.offersOnLeads.delete({ where: { offerId_leadId: { offerId, leadId } } });
+  revalidatePath("/offers");
+  revalidatePath(`/offers/${offerId}`);
 }
 
 export type ImportLeadsState = {
