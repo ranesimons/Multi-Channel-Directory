@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Channel {
+  EMAIL
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+  SMS
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum Stage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  avatarUrl String?
+  stage     Stage    @default(NEW)
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email            String?
+  phone            String?
+  facebookHandle   String?
+  instagramHandle  String?
+  whatsappNumber   String?
+
+  messages Message[]
+  notes    Note[]
+  tags     TagsOnLeads[]
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  channel   Channel
+  direction Direction
+  body      String
+  sentAt    DateTime  @default(now())
+  read      Boolean   @default(true)
+
+  @@index([leadId, sentAt])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id    String        @id @default(cuid())
+  name  String        @unique
+  color String        @default("gray")
+  leads TagsOnLeads[]
+}
+
+model TagsOnLeads {
+  leadId String
+  tagId  String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+}
