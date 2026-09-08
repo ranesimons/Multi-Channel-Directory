@@ -1,6 +1,8 @@
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function getLeadsForList() {
+  await connection();
   const leads = await prisma.lead.findMany({
     include: {
       messages: { orderBy: { sentAt: "desc" }, take: 1 },
@@ -23,6 +25,7 @@ export async function getLeadsForList() {
 }
 
 export async function getLeadDetail(leadId: string) {
+  await connection();
   return prisma.lead.findUnique({
     where: { id: leadId },
     include: {
@@ -34,6 +37,7 @@ export async function getLeadDetail(leadId: string) {
 }
 
 export async function getLeadsForTable() {
+  await connection();
   const leads = await prisma.lead.findMany({
     include: {
       tags: { include: { tag: true } },
@@ -58,6 +62,7 @@ export async function getLeadsForTable() {
 }
 
 export async function getChannelsUsedByLead(leadId: string) {
+  await connection();
   const rows = await prisma.message.findMany({
     where: { leadId },
     distinct: ["channel"],
